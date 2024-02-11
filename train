@@ -1,5 +1,6 @@
 from transformers import AutoModelForSequenceClassification, TrainingArguments, Trainer
-from sklearn.model_selection import train_test_split
+from transformers import AutoTokenizer
+import numpy as np
 
 # Specify the local model path
 model_path = 'O:/ZRH/CF1/03 Projects/NNM Pipeline/bert-tiny'
@@ -7,15 +8,19 @@ model_path = 'O:/ZRH/CF1/03 Projects/NNM Pipeline/bert-tiny'
 # Load the model from the local directory
 model = AutoModelForSequenceClassification.from_pretrained(model_path, num_labels=3)
 
-# Split the training data into training and validation sets
-train_texts, val_texts, train_labels, val_labels = train_test_split(train_texts, train_labels, test_size=0.1, random_state=42)
+# Assume tokenizer is defined similarly
+tokenizer = AutoTokenizer.from_pretrained(model_path)
 
-print(len(train_labels))
-print(len(val_labels))
+# Assuming test_texts and test_labels are ready
+# Tokenize the test data
+test_encodings = tokenizer(test_texts, truncation=True, padding=True, max_length=512)
+
+# Convert to PyTorch tensors and create a dataset for the test data
+test_dataset = CommentsDataset(test_encodings, list(test_labels))
 
 # Define training arguments
 training_args = TrainingArguments(
-    output_dir='O:/ZRH/CF1/03 Projects/NNM Pipeline/',          # directory to save the model and logging
+    output_dir='./results',          # directory to save the model and logging
     num_train_epochs=3,              # total number of training epochs
     per_device_train_batch_size=8,   # batch size per device during training
     per_device_eval_batch_size=16,   # batch size for evaluation
@@ -23,107 +28,23 @@ training_args = TrainingArguments(
     weight_decay=0.01,               # strength of weight decay regularization
     logging_dir='./logs',            # directory for storing logs
     logging_steps=10,                # log & save weights every logging_steps
-    disable_tqdm=True                # Disable tqdm progress bar to prevent Jupyter notebook conflicts
+    disable_tqdm=True,               # Disable tqdm progress bar to prevent Jupyter notebook conflicts
+    evaluation_strategy="epoch"      # Evaluate at the end of each epoch
 )
 
 # Initialize the Trainer
 trainer = Trainer(
     model=model,
     args=training_args,
-    train_dataset=CommentsDataset(train_encodings, train_labels),
-    eval_dataset=CommentsDataset(val_encodings, val_labels)
+    train_dataset=train_dataset,
+    eval_dataset=val_dataset
 )
 
 # Start training
 trainer.train()
 
-# Evaluate the model on the validation set
-eval_results = trainer.evaluate()
+# Evaluate the model on the test set
+test_results = trainer.evaluate(test_dataset)
 
-# Print evaluation results
-print(eval_results)
-
-73
-9
----------------------------------------------------------------------------
-IndexError                                Traceback (most recent call last)
-Cell In[38], line 38
-     30 trainer = Trainer(
-     31     model=model,
-     32     args=training_args,
-     33     train_dataset=CommentsDataset(train_encodings, train_labels),
-     34     eval_dataset=CommentsDataset(val_encodings, val_labels)
-     35 )
-     37 # Start training
----> 38 trainer.train()
-     40 # Evaluate the model on the validation set
-     41 eval_results = trainer.evaluate()
-
-File ~\AppData\Roaming\Python\Python311\site-packages\transformers\trainer.py:1539, in Trainer.train(self, resume_from_checkpoint, trial, ignore_keys_for_eval, **kwargs)
-   1537         hf_hub_utils.enable_progress_bars()
-   1538 else:
--> 1539     return inner_training_loop(
-   1540         args=args,
-   1541         resume_from_checkpoint=resume_from_checkpoint,
-   1542         trial=trial,
-   1543         ignore_keys_for_eval=ignore_keys_for_eval,
-   1544     )
-
-File ~\AppData\Roaming\Python\Python311\site-packages\transformers\trainer.py:1836, in Trainer._inner_training_loop(self, batch_size, args, resume_from_checkpoint, trial, ignore_keys_for_eval)
-   1833     rng_to_sync = True
-   1835 step = -1
--> 1836 for step, inputs in enumerate(epoch_iterator):
-   1837     total_batched_samples += 1
-   1839     if self.args.include_num_input_tokens_seen:
-
-File ~\AppData\Roaming\Python\Python311\site-packages\accelerate\data_loader.py:451, in DataLoaderShard.__iter__(self)
-    449 # We iterate one batch ahead to check when we are at the end
-    450 try:
---> 451     current_batch = next(dataloader_iter)
-    452 except StopIteration:
-    453     yield
-
-File ~\AppData\Roaming\Python\Python311\site-packages\torch\utils\data\dataloader.py:631, in _BaseDataLoaderIter.__next__(self)
-    628 if self._sampler_iter is None:
-    629     # TODO(https://github.com/pytorch/pytorch/issues/76750)
-    630     self._reset()  # type: ignore[call-arg]
---> 631 data = self._next_data()
-    632 self._num_yielded += 1
-    633 if self._dataset_kind == _DatasetKind.Iterable and \
-    634         self._IterableDataset_len_called is not None and \
-    635         self._num_yielded > self._IterableDataset_len_called:
-
-File ~\AppData\Roaming\Python\Python311\site-packages\torch\utils\data\dataloader.py:675, in _SingleProcessDataLoaderIter._next_data(self)
-    673 def _next_data(self):
-    674     index = self._next_index()  # may raise StopIteration
---> 675     data = self._dataset_fetcher.fetch(index)  # may raise StopIteration
-    676     if self._pin_memory:
-    677         data = _utils.pin_memory.pin_memory(data, self._pin_memory_device)
-
-File ~\AppData\Roaming\Python\Python311\site-packages\torch\utils\data\_utils\fetch.py:51, in _MapDatasetFetcher.fetch(self, possibly_batched_index)
-     49         data = self.dataset.__getitems__(possibly_batched_index)
-     50     else:
----> 51         data = [self.dataset[idx] for idx in possibly_batched_index]
-     52 else:
-     53     data = self.dataset[possibly_batched_index]
-
-File ~\AppData\Roaming\Python\Python311\site-packages\torch\utils\data\_utils\fetch.py:51, in <listcomp>(.0)
-     49         data = self.dataset.__getitems__(possibly_batched_index)
-     50     else:
----> 51         data = [self.dataset[idx] for idx in possibly_batched_index]
-     52 else:
-     53     data = self.dataset[possibly_batched_index]
-
-Cell In[34], line 7, in CommentsDataset.__getitem__(self, idx)
-      6 def __getitem__(self, idx):
-----> 7     item = {key: torch.tensor(val[idx]) for key, val in self.encodings.items()}
-      8     item['labels'] = torch.tensor(self.labels[idx])
-      9     return item
-
-Cell In[34], line 7, in <dictcomp>(.0)
-      6 def __getitem__(self, idx):
-----> 7     item = {key: torch.tensor(val[idx]) for key, val in self.encodings.items()}
-      8     item['labels'] = torch.tensor(self.labels[idx])
-      9     return item
-
-IndexError: list index out of range
+# Output the results of the test evaluation
+print("Test Evaluation Results:", test_results)
