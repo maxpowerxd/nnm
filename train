@@ -1,10 +1,14 @@
 from transformers import AutoModelForSequenceClassification, TrainingArguments, Trainer
+from sklearn.model_selection import train_test_split
 
 # Specify the local model path
 model_path = 'O:/ZRH/CF1/03 Projects/NNM Pipeline/bert-tiny'
 
 # Load the model from the local directory
 model = AutoModelForSequenceClassification.from_pretrained(model_path, num_labels=3)
+
+# Split the training data into training and validation sets
+train_texts, val_texts, train_labels, val_labels = train_test_split(train_texts, train_labels, test_size=0.1, random_state=42)
 
 # Define training arguments
 training_args = TrainingArguments(
@@ -23,9 +27,15 @@ training_args = TrainingArguments(
 trainer = Trainer(
     model=model,
     args=training_args,
-    train_dataset=train_dataset,
-    eval_dataset=val_dataset
+    train_dataset=CommentsDataset(train_encodings, train_labels),
+    eval_dataset=CommentsDataset(val_encodings, val_labels)
 )
 
 # Start training
 trainer.train()
+
+# Evaluate the model on the validation set
+eval_results = trainer.evaluate()
+
+# Print evaluation results
+print(eval_results)
