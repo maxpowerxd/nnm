@@ -1,0 +1,44 @@
+# Assuming df_full is your full DataFrame
+# Make sure to preprocess your 'Comment text' column if you haven't done so already
+comments_full = df_full['Comment text'].fillna(" ")  # Fill missing comments
+
+# Tokenize the full comments
+encodings_full = tokenizer(list(comments_full), truncation=True, padding=True, max_length=128)
+
+class FullDataset(Dataset):
+    def __init__(self, encodings):
+        self.encodings = encodings
+
+    def __getitem__(self, idx):
+        return {key: torch.tensor(val[idx]) for key, val in self.encodings.items()}
+
+    def __len__(self):
+        return len(self.encodings.input_ids)
+
+full_dataset = FullDataset(encodings_full)
+
+from torch.utils.data import DataLoader
+
+# Prepare the DataLoader
+full_loader = DataLoader(full_dataset, batch_size=16, shuffle=False)
+
+model.eval()  # Set the model to evaluation mode
+predictions = []
+
+# Predict
+with torch.no_grad():
+    for batch in full_loader:
+        inputs = {key: val.to(model.device) for key, val in batch.items()}
+        outputs = model(**inputs)
+        logits = outputs.logits
+        predictions.extend(torch.argmax(logits, dim=-1).cpu().numpy())
+
+# Map predictions back to labels
+predicted_labels = [list(label_dict.keys())[list(label_dict.values()).index(pred)] for pred in predictions]
+
+# Add the predicted labels to your DataFrame
+df_full['Predicted Assessment'] = predicted_labels
+
+# Save the DataFrame with predictions to a new Excel file
+output_path = 'path_to_your_output_file/predicted_data.xlsx'
+df_full.to_excel(output_path, index=False)
