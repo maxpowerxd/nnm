@@ -1,0 +1,27 @@
+import pandas as pd
+from transformers import pipeline, AutoTokenizer, AutoModelForSequenceClassification
+
+# Load the trained model and tokenizer
+model_path = './results'  # Adjust path as necessary
+tokenizer = AutoTokenizer.from_pretrained(model_path)
+model = AutoModelForSequenceClassification.from_pretrained(model_path)
+
+# Initialize the pipeline with your model and tokenizer
+predictor = pipeline('text-classification', model=model, tokenizer=tokenizer)
+
+# Load your cleaned data file from Excel
+data_path = 'O:/ZRH/CF1/03 Projects/NNM Pipeline/data_cleaned_cleaned.xlsx'  # Adjust the path as necessary
+df = pd.read_excel(data_path)
+
+# Function to predict the assessment for a given text
+def predict_assessment(text):
+    prediction = predictor(text)
+    # Assuming you want the label part of the prediction
+    return prediction[0]['label']
+
+# Apply the prediction to each row in the DataFrame for the 'Comment text' column
+df['Assessment'] = df['Comment text'].apply(predict_assessment)
+
+# Save the DataFrame with predictions back to an Excel file
+output_path = 'O:/ZRH/CF1/03 Projects/NNM Pipeline/predicted_data.xlsx'  # Adjust the output path as needed
+df.to_excel(output_path, index=False)
