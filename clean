@@ -1,0 +1,44 @@
+Test is a 2013 American drama film written and directed by Chris Mason Johnson, starring Scott Marlowe and Matthew Risch. The film is set in San Francisco in 1985, during the early years of the AIDS crisis. It follows Frankie, an understudy for a contemporary dance company, as he pursues a sexual relationship with another, more experienced dancer 
+
+
+import pandas as pd
+
+# Replace the path with the actual path where your script can access it
+file_path = 'O:/ZRH/CF1/03 Projects/NNM Pipeline/data_cleaned.xlsx'
+
+# Read the Excel file
+df = pd.read_excel(file_path)
+
+# Convert 'Deal No.' to integer (assuming it's always an integer, otherwise consider errors='coerce')
+df['Deal No.'] = pd.to_numeric(df['Deal No.'], downcast='integer', errors='raise')
+
+# Ensure 'Category' and 'Client/Prospect' are of type string
+df['Category'] = df['Category'].astype(str)
+df['Client/Prospect'] = df['Client/Prospect'].astype(str)
+
+# Convert 'Probability' to a numerical format (removing the '%' and converting to a float)
+df['Probability'] = df['Probability'].str.rstrip('%').astype('float') / 100.0
+
+# Convert 'Amount in mCHF' to a decimal (float in pandas)
+df['Amount in mCHF'] = df['Amount in mCHF'].astype(float)
+
+# Ensure 'Currency' is a string
+df['Currency'] = df['Currency'].astype(str)
+
+# Convert 'Exp. closing month' to a datetime format
+df['Exp. closing month'] = pd.to_datetime(df['Exp. closing month'], format='%Y%m')
+
+# Cleaning 'Comment text' if necessary (example: lowercasing, stripping whitespace)
+df['Comment text'] = df['Comment text'].str.strip().str.lower()
+
+# Handling missing values (Example: fill with defaults or drop)
+# This step depends on how you want to handle missing values. 
+# For instance, to fill missing 'Comment text' with 'no comment':
+df['Comment text'] = df['Comment text'].fillna('no comment')
+
+# Example to drop rows where 'Deal No.' is missing
+df = df.dropna(subset=['Deal No.'])
+
+# Save the cleaned data frame back to an Excel file, adjust the path as needed
+cleaned_file_path = 'O:/ZRH/CF1/03 Projects/NNM Pipeline/data_cleaned_cleaned.xlsx'
+df.to_excel(cleaned_file_path, index=False)
