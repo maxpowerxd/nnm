@@ -16,6 +16,7 @@ training_args = TrainingArguments(
     weight_decay=0.01,               # strength of weight decay regularization
     logging_dir='./logs',            # directory for storing logs
     logging_steps=10,                # log & save weights every logging_steps
+    disable_tqdm=True                # Disable tqdm progress bar to prevent Jupyter notebook conflicts
 )
 
 # Initialize the Trainer
