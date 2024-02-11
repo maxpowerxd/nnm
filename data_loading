@@ -1,0 +1,26 @@
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from transformers import DistilBertTokenizerFast, TrainingArguments, Trainer
+from transformers import AutoModelForSequenceClassification
+import torch
+from torch.utils.data import Dataset
+
+# Adjust the path to where your updated Excel file is located
+file_path = 'path_to_your_updated_file/data_test.xlsx'
+
+# Load the updated Excel file
+df = pd.read_excel(file_path)
+
+# Preprocess your data
+# Assuming 'Comment text' is the column you want to use for training
+comments = df['Comment text'].fillna(" ")  # Fill missing comments with whitespace
+assessments = df['Assessment'].fillna("No info")  # Fill missing assessments with "No info"
+
+# Encode the labels
+label_dict = {"Subidy case": 0, "Other": 1, "No info": 2}
+df['label'] = df['Assessment'].apply(lambda x: label_dict[x])
+
+# Split the dataset
+train_texts, val_texts, train_labels, val_labels = train_test_split(comments, df['label'], test_size=0.2, random_state=42)
+
+# Proceed with tokenization and model training as previously described
